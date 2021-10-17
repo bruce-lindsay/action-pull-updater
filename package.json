@@ -1,0 +1,20 @@
+{
+  "name": "@bruce-lindsay/action-pull-updater",
+  "version": "0.0.0-a",
+  "description": "after an update of main update a random pull from a label based queue",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build index.ts --license licenses.txt"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^5.0.0",
+    "@octokit/plugin-rest-endpoint-methods": "^5.13.0",
+    "@tsconfig/node12": "^1.0.9",
+    "@types/node": "^16.10.9",
+    "typescript": "^4.4.3"
+  }
+}

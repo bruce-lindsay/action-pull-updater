@@ -1,0 +1,17 @@
+name: Pull-Updater
+description: Adds a label based on user who opened a pull request
+inputs:
+  token:
+    description: access token
+    required: false
+    default: ${{ github.token }}
+  label:
+    description: label of pulls to include
+    required: false
+    default: autoupdate
+branding:
+  icon: plus-square
+  color: green
+runs:
+  using: node12
+  main: dist/index.js
