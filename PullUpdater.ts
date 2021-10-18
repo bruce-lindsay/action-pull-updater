@@ -41,8 +41,7 @@ export class PullUpdater {
       return Promise.resolve(0);
     }
 
-    const chosen = await this.choosePullRequest(response.data.map(n => n.id));
-
+    const chosen = await this.choosePullRequest(response.data.map(n => n.number));
     const updateResponse = await this.requester('PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch',
       <any>{ pull_number: chosen });
 
