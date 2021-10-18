@@ -29,7 +29,7 @@ export class PullUpdater {
   }
 
   async choosePullRequest(pullNumber: number[]) {
-    // todo: replace with some pull request evaluatation here (eliminate PR with merge issues or failing tests)
+    // todo: replace with some pull request evaluation here (eliminate PR with merge issues or failing tests)
     const chooser = new FilteredRandomChooser(pullNumber, n => Promise.resolve(true));
     return chooser.Choose()
   }
