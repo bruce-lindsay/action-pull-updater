@@ -8273,17 +8273,108 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 3542:
+/***/ 7800:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.FilteredRandomChooser = exports.ChooseItemError = void 0;
+const chooseRandomItem = (items) => items[Math.floor(Math.random() * items.length)];
+class ChooseItemError {
+    constructor(chooseError) {
+        this.chooseError = chooseError;
+    }
+}
+exports.ChooseItemError = ChooseItemError;
+class FilteredRandomChooser {
+    constructor(items, test) {
+        this.test = test;
+        this.remainingItems = [...items];
+        this.initialItemCount = this.remainingItems.length;
+    }
+    async Choose() {
+        if (this.initialItemCount == 0) {
+            return Promise.reject(new ChooseItemError("zero_items"));
+        }
+        if (this.remainingItems.length === 0) {
+            return Promise.reject(new ChooseItemError("all_items_eliminated"));
+        }
+        const candidateItem = chooseRandomItem(this.remainingItems);
+        try {
+            const acceptableItem = await this.test(candidateItem);
+            if (acceptableItem) {
+                return Promise.resolve(candidateItem);
+            }
+            else {
+                this.remainingItems = this.remainingItems.filter(item => item !== candidateItem);
+            }
+        }
+        catch (e) {
+            return Promise.reject(e);
+        }
+        return this.Choose();
+    }
+}
+exports.FilteredRandomChooser = FilteredRandomChooser;
+
+
+/***/ }),
+
+/***/ 3542:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.PullUpdater = void 0;
+const github = __importStar(__nccwpck_require__(7434));
+const FilteredRandomChooser_1 = __nccwpck_require__(7800);
+const filterToPulls = (data) => {
+    return data.filter(o => o.pull_request && o.pull_request.url);
+};
 class PullUpdater {
-    constructor(opts) { }
-    performUpdate() {
-        return Promise.reject('todo');
+    constructor(opts) {
+        this.opts = opts;
+        this.requester = github.getOctokit(opts.auth).request.defaults({ repo: opts.repository, owner: opts.owner });
+    }
+    async readPullRequestsByLabel() {
+        return this.requester('GET /repos/{owner}/{repo}/issues', { state: 'open', labels: this.opts.label, per_page: 100 })
+            .then(f => ({ ...f, data: filterToPulls(f.data) }));
+    }
+    async choosePullRequest(pullNumber) {
+        // todo: replace with some pull request evaluation here (eliminate PR with merge issues or failing tests)
+        const chooser = new FilteredRandomChooser_1.FilteredRandomChooser(pullNumber, n => Promise.resolve(true));
+        return chooser.Choose();
+    }
+    async performUpdate() {
+        const response = await this.readPullRequestsByLabel();
+        if (response.data.length === 0) {
+            return Promise.resolve(0);
+        }
+        const chosen = await this.choosePullRequest(response.data.map(n => n.number));
+        const updateResponse = await this.requester('PUT /repos/{owner}/{repo}/pulls/{pull_number}/update-branch', { pull_number: chosen });
+        console.log(updateResponse);
+        return chosen;
     }
 }
 exports.PullUpdater = PullUpdater;
